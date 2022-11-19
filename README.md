@@ -1,4 +1,4 @@
-# aurox domain names
+# Aurox Domain Names Batch Mode
 
 This script allows you to mint domain in aurox wallet like gem.aurox.eth
 
