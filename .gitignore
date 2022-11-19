@@ -3,6 +3,7 @@ node_modules
 keys.txt
 domains.txt
 wallets.csv
+results.csv
 
 # local env files
 .env

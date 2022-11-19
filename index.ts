@@ -10,7 +10,7 @@ import randomWords from "random-words"
 // Yout can setup bot here:
 const TIMEOUT = 50
 const NUMBER_MODE = true
-const DOMAINS_LIMIT = 123
+const DOMAINS_LIMIT = 1000
 const WORD_LENGTH = 3
 
 // Helpers
