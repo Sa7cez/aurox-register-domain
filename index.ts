@@ -9,9 +9,9 @@ import randomWords from "random-words"
 
 // Yout can setup bot here:
 const TIMEOUT = 50
-const NUMBER_MODE = true
-const DOMAINS_LIMIT = 1000
-const WORD_LENGTH = 3
+const NUMBER_MODE = false
+const DOMAINS_LIMIT = 200
+const WORD_MAX_LENGTH = 5
 
 // Helpers
 const randomInt = (value) => Math.floor(Math.random() * value)
@@ -38,6 +38,7 @@ const registerNewWallet = async (key) => {
   if (subdomain)
     return `Address already registered as ${subdomain}`
   
+  console.log()
   while(!subdomain && domains.length > 0) {
     let domain = domains[randomInt(domains.length)]
     subdomain = (await aurox.get(`check/${domain}`)).data.resolveAddress === '0x0000000000000000000000000000000000000000'
@@ -64,7 +65,7 @@ const registerNewWallet = async (key) => {
   }).catch(e => {
     if (e.response.data.error.indexOf('must contain a valid domain name') > -1)
       return registerNewWallet(key)
-    return 'Registration failed'
+    return `Registration failed: ${e?.response?.data?.error || `${e.response.status} ${e.responce.statusText}`}`
   })
 }
 
@@ -79,7 +80,11 @@ const main = async () => {
     } catch (e) {
       domains = NUMBER_MODE
         ? Array.from(Array(DOMAINS_LIMIT), (_,x) => x) // Number domains
-        : Array.from(Array(DOMAINS_LIMIT), (_,x) => randomWords({exactly: 1, maxLength: WORD_LENGTH})) // Word domains
+        : Array.from(Array(DOMAINS_LIMIT), (_,x) => randomWords({exactly: 1, maxLength: WORD_MAX_LENGTH})) // Word domains
+    }
+    if (domains.length === 0) {
+      console.log('Fill file domains.txt or delete it')
+      return 
     }
 
     // Keys, if not exists activate generation
@@ -88,24 +93,25 @@ const main = async () => {
       keys = (await fs.readFile('keys.txt', 'utf8')).split('\n').filter(item => item.length >= 64)
     } catch (e) {
       console.log(`Start generate ${domains.length} new wallets, it's may be slowly...`)
-      for (let i = 0; i < domains.length * 2; i++) {
+      for (let i = 0; i < domains.length; i++) {
         const mnemonic = generateMnemonic()
         const wallet = Wallet.fromMnemonic(mnemonic)
         keys.push(wallet.privateKey)
         await fs.appendFile('wallets.csv', `"${wallet.address}";"${wallet.privateKey}";"${mnemonic}"\n`)
       }
     }
-
     if (keys.length === 0) {
-      console.log('Fill file keys.txt')
+      console.log('Fill file keys.txt or delete it')
       return 
     }
+
     console.log(`You set ${domains.length} domains for ${keys.length} addresses!`)
-    for(const key of keys) {
-      console.log(await registerNewWallet(key), '\n')
+    const workByEntity = domains.length > keys.length ? domains : keys
+    for (let i = 0; i < workByEntity.length; i++) {
+      console.log(await registerNewWallet(keys[i]), '\n')
       await delay(TIMEOUT + randomInt(TIMEOUT))
       if (domains.length === 0) {
-        console.log('Not enough domains :(')
+        console.log('Not enough availiable domains :(')
         return
       }
     }
